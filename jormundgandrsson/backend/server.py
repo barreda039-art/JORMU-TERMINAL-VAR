@@ -5,6 +5,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 from capital_client import CapitalClient
+from icaro_bridge import icaro_bridge
 import json, time
 
 app = Flask(__name__)
@@ -286,6 +287,46 @@ def update_strategy_status(strategy_id):
     return jsonify({'ok': True, 'strategy': strategy_id, 'active': active})
 
 # ══════════════════════════════════════════════════════════
+# ICARO ENGINE
+# ══════════════════════════════════════════════════════════
+
+@app.route('/api/icaro/status', methods=['GET'])
+def icaro_status():
+    nav = 0
+    if capital.connected:
+        balance_data = capital.get_account_balance()
+        nav = balance_data.get('balance', 0) if balance_data.get('ok') else 0
+    summary = icaro_bridge.get_status_summary()
+    summary['icaro_capital'] = engine.risk.get_icaro_capital(nav)
+    summary['nav']           = nav
+    return jsonify({'ok': True, 'icaro': summary})
+
+@app.route('/api/icaro/capital', methods=['GET', 'PUT'])
+def icaro_capital():
+    if request.method == 'GET':
+        nav = 0
+        if capital.connected:
+            balance_data = capital.get_account_balance()
+            nav = balance_data.get('balance', 0) if balance_data.get('ok') else 0
+        reserve_pct   = engine.risk.config.get('icaro_reserve_pct', 20.0)
+        icaro_cap     = engine.risk.get_icaro_capital(nav)
+        return jsonify({
+            'ok':            True,
+            'nav':           nav,
+            'reserve_pct':   reserve_pct,
+            'icaro_capital': icaro_cap,
+            'available_nav': nav - icaro_cap,
+        })
+    body        = request.get_json() or {}
+    reserve_pct = body.get('reserve_pct')
+    if reserve_pct is None:
+        return jsonify({'ok': False, 'error': 'reserve_pct requerido'}), 400
+    if not (0 <= reserve_pct <= 80):
+        return jsonify({'ok': False, 'error': 'reserve_pct debe estar entre 0 y 80'}), 400
+    engine.risk.set_icaro_reserve(reserve_pct)
+    return jsonify({'ok': True, 'reserve_pct': reserve_pct})
+
+# ══════════════════════════════════════════════════════════
 # ERRORS
 # ══════════════════════════════════════════════════════════
 @app.errorhandler(404)
@@ -298,6 +339,9 @@ def server_error(e):
 
 # ══════════════════════════════════════════════════════════
 if __name__ == '__main__':
+    # Iniciar watcher de ICARO en background
+    icaro_bridge.start_watching(interval_seconds=30)
+
     print("""
 ╔═══════════════════════════════════════════════════╗
 ║   JORMUNDGANDRSSON — Backend Server v2            ║

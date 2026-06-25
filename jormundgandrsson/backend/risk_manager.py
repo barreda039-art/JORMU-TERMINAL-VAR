@@ -3,6 +3,9 @@
 # Sizing institucional + validación pre-ejecución
 # ═══════════════════════════════════════════════════════════
 
+from icaro_bridge import icaro_bridge
+
+
 class RiskManager:
 
     # Umbrales de score mínimo por activo
@@ -29,6 +32,7 @@ class RiskManager:
             'max_exposure':      80.0,   # % exposición máxima
             'max_single_pos':    5.0,    # % máximo por posición
             'circuit_breaker':   False,
+            'icaro_reserve_pct': 20.0,   # % del NAV reservado para ICARO (configurable)
         }
         self.daily_pnl    = 0
         self.peak_nav     = 0
@@ -40,6 +44,17 @@ class RiskManager:
         """
         asset = signal['asset']
         score = signal['total_score']
+
+        # 0. ICARO Killswitch — gate de máxima prioridad
+        if icaro_bridge.is_killswitch_active():
+            return self._reject('ICARO Killswitch global activo — trading suspendido')
+
+        # Calcular NAV disponible para estrategias generales (excluyendo reserva ICARO)
+        icaro_reserve  = nav * (self.config['icaro_reserve_pct'] / 100)
+        available_nav  = nav - icaro_reserve
+
+        # Informar al bridge cuánto capital tiene ICARO
+        icaro_bridge.update_capital(nav, self.config['icaro_reserve_pct'])
 
         # 1. Circuit breaker
         if self.config['circuit_breaker']:
@@ -135,14 +150,26 @@ class RiskManager:
         if nav > self.peak_nav:
             self.peak_nav = nav
 
+    def set_icaro_reserve(self, reserve_pct: float):
+        """Actualiza el % de reserva de ICARO — llamado desde el terminal."""
+        self.config['icaro_reserve_pct'] = max(0.0, min(reserve_pct, 80.0))
+        icaro_bridge.update_reserve_pct(self.config['icaro_reserve_pct'])
+        print(f'[RISK] Reserva ICARO actualizada: {self.config["icaro_reserve_pct"]}%')
+
+    def get_icaro_capital(self, nav: float) -> float:
+        """Retorna el capital reservado para ICARO dado el NAV actual."""
+        return round(nav * self.config['icaro_reserve_pct'] / 100, 2)
+
     def _reject(self, reason: str) -> dict:
         print(f'[RISK] Rechazado: {reason}')
         return {'approved': False, 'reason': reason, 'size': 0}
 
     def get_status(self) -> dict:
         return {
-            'circuit_breaker': self.config['circuit_breaker'],
-            'daily_pnl':       self.daily_pnl,
-            'peak_nav':        self.peak_nav,
-            'config':          self.config,
+            'circuit_breaker':   self.config['circuit_breaker'],
+            'daily_pnl':         self.daily_pnl,
+            'peak_nav':          self.peak_nav,
+            'config':            self.config,
+            'icaro_reserve_pct': self.config.get('icaro_reserve_pct', 20.0),
+            'icaro_killswitch':  icaro_bridge.is_killswitch_active(),
         }

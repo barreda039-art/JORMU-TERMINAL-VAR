@@ -65,6 +65,9 @@
   <button class="nav-btn" onclick="showModule('risk')" id="nav-risk">
     <span class="nav-icon">▪</span> RISK MGR
   </button>
+  <button class="nav-btn" onclick="showModule('icaro')" id="nav-icaro">
+    <span class="nav-icon">▪</span> ICARO
+  </button>
   <button class="nav-btn" onclick="showModule('config')" id="nav-config">
     <span class="nav-icon">▪</span> CONFIG
   </button>
@@ -473,6 +476,15 @@
   </div>
 
   <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: ICARO                              -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module" id="module-icaro">
+    <div class="icaro-layout" id="icaro-content">
+      <!-- Renderizado por icaro.js → renderIcaroModule() -->
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
   <!-- MODULE: CONFIG                             -->
   <!-- ═══════════════════════════════════════════ -->
   <div class="module" id="module-config">
@@ -527,6 +539,7 @@
 <script src="js/risk.js"></script>
 <script src="js/config.js"></script>
 <script src="js/api.js"></script>
+<script src="js/icaro.js"></script>
 <script src="js/main.js"></script>
 </body>
 </html>

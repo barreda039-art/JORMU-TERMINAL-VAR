@@ -7,6 +7,11 @@ class MacroRegime:
 
     def __init__(self, capital_client):
         self.client = capital_client
+        try:
+            from icaro_bridge import icaro_bridge as _bridge
+            self._icaro = _bridge
+        except ImportError:
+            self._icaro = None
 
         # Epics de Capital.com para instrumentos macro
         self.MACRO_EPICS = {
@@ -48,6 +53,7 @@ class MacroRegime:
             self._determine_regime()
             self._set_directional_bias()
             self._set_size_multiplier()
+            self._enrich_with_icaro()   # ← enriquecimiento con ICARO (no bloquea)
             return self.regime
 
         except Exception as e:
@@ -175,6 +181,40 @@ class MacroRegime:
             self.regime['size_multiplier'] = 0.80   # Complacencia = precaución
         else:
             self.regime['size_multiplier'] = 1.0    # Normal
+
+    def _enrich_with_icaro(self):
+        """
+        Enriquece el régimen con datos de ICARO si está disponible.
+        No bloquea ni falla si ICARO está offline — el régimen sigue
+        funcionando con su lógica propia.
+        """
+        if self._icaro is None or not self._icaro.is_alive():
+            self.regime['icaro_available']  = False
+            self.regime['icaro_regime']     = None
+            self.regime['icaro_fragility']  = None
+            self.regime['icaro_crash_prob'] = None
+            return
+
+        try:
+            ctx = self._icaro.get_regime()
+
+            self.regime['icaro_available']  = True
+            self.regime['icaro_regime']     = ctx.get('regime_label')
+            self.regime['icaro_fragility']  = ctx.get('fragility_score')
+            self.regime['icaro_crash_prob'] = ctx.get('crash_probability')
+
+            # Si ICARO detecta HIGH_VOL_STRESS y el sistema está en NEUTRAL,
+            # reducir size_multiplier como capa adicional de protección.
+            if (ctx.get('regime_label') == 'HIGH_VOL_STRESS' and
+                    self.regime['mode'] == 'NEUTRAL'):
+                self.regime['size_multiplier'] = min(
+                    self.regime['size_multiplier'], 0.50
+                )
+                self.regime['reason'] += ' | ICARO: HIGH_VOL_STRESS detectado'
+
+        except Exception as e:
+            self.regime['icaro_available'] = False
+            print(f'[MACRO] ICARO enrich error (no crítico): {e}')
 
     def is_active_session(self, asset: str) -> dict:
         """

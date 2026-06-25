@@ -251,6 +251,7 @@ function showModule(name) {
   if (name === 'strategies') { renderStrategiesModule(); }
   if (name === 'positions')  { renderPositionsModule(); }
   if (name === 'risk')       { renderRiskModule(); setTimeout(() => { initDrawdownChart(); initPnlHistChart(); }, 100); }
+  if (name === 'icaro')      { renderIcaroModule(); }
   if (name === 'config')     { renderConfigModule(); }
 }
 

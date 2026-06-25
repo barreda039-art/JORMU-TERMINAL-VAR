@@ -767,3 +767,114 @@ input, select, textarea { font-family: var(--mono); }
 .compound-key { color: var(--text3); }
 .compound-val { font-weight: 600; color: var(--text0); }
 .compound-val.gold { color: var(--gold); }
+
+/* ══════════════════════════════════════════════════════
+   ICARO MODULE STYLES
+══════════════════════════════════════════════════════ */
+
+.icaro-layout { display: flex; flex-direction: column; gap: 1px; padding: 4px; }
+
+/* Status bar */
+.icaro-status-bar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 6px 10px; background: var(--bg2);
+  border-bottom: 1px solid var(--border);
+  font-size: 10px; letter-spacing: 1px;
+}
+.icaro-engine-name { color: var(--gold); font-weight: 700; font-size: 11px; }
+.icaro-online      { font-weight: 600; font-size: 10px; }
+.icaro-ts          { color: var(--text3); font-size: 9px; flex: 1; }
+.icaro-action-badge { font-weight: 700; font-size: 10px; letter-spacing: 1px; }
+
+/* Top row — regime + signal */
+.icaro-top-row {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+}
+.icaro-panel { margin: 0 !important; }
+
+/* Metrics grid inside panels */
+.icaro-metrics-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 1px; padding: 6px;
+}
+.icaro-metric {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 6px 8px; background: var(--bg3);
+}
+.icaro-metric-label {
+  font-size: 8px; color: var(--text3);
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.icaro-metric-val {
+  font-size: 13px; font-weight: 700;
+  color: var(--text0); letter-spacing: 0.5px;
+}
+.icaro-metric-val.gold { color: var(--gold); }
+.icaro-metric-val.pos  { color: var(--green); }
+.icaro-metric-val.neg  { color: var(--red); }
+
+/* Capital grid */
+.icaro-capital-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 1px; padding: 6px;
+}
+.icaro-capital-block {
+  display: flex; flex-direction: column; gap: 2px;
+  padding: 8px; background: var(--bg3);
+}
+.icaro-cap-label { font-size: 8px; color: var(--text3); letter-spacing: 0.5px; }
+.icaro-cap-val   { font-size: 14px; font-weight: 700; color: var(--text0); }
+.icaro-cap-val.gold { color: var(--gold); }
+.icaro-cap-sub   { font-size: 8px; color: var(--text3); }
+
+/* Reserve slider control */
+.icaro-reserve-control {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-top: 1px solid var(--border);
+}
+.icaro-reserve-label { font-size: 9px; color: var(--text3); letter-spacing: 0.5px; min-width: 100px; }
+.icaro-slider {
+  flex: 1; -webkit-appearance: none; height: 2px;
+  background: var(--border); outline: none;
+  accent-color: var(--gold);
+}
+.icaro-reserve-pct  { font-size: 11px; color: var(--gold); font-weight: 700; min-width: 36px; }
+.icaro-btn-apply {
+  background: var(--gold); color: var(--bg0);
+  border: none; padding: 4px 10px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px; font-weight: 700; letter-spacing: 1px;
+  cursor: pointer;
+}
+.icaro-btn-apply:hover { opacity: 0.85; }
+
+/* Deployment stages */
+.icaro-stages-grid { display: flex; flex-direction: column; gap: 1px; padding: 6px; }
+.icaro-stage-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 8px 10px; background: var(--bg3);
+  font-size: 10px;
+}
+.icaro-stage-active { background: var(--bg4); border-left: 2px solid var(--gold); }
+.icaro-stage-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.icaro-stage-label { color: var(--text1); font-weight: 600; min-width: 100px; letter-spacing: 0.5px; }
+.icaro-stage-beta  { color: var(--text3); font-size: 9px; min-width: 50px; }
+.icaro-stage-cap   { color: var(--text0); font-weight: 700; flex: 1; }
+.icaro-stage-cap.gold { color: var(--gold); }
+.icaro-stage-status { font-size: 9px; color: var(--text3); min-width: 70px; text-align: right; }
+
+/* Engine control */
+.icaro-engine-row {
+  display: flex; align-items: flex-start; gap: 20px;
+  padding: 10px;
+}
+.icaro-engine-info  { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.icaro-info-item    { font-size: 9px; color: var(--text3); letter-spacing: 0.3px; }
+.icaro-engine-actions { flex-shrink: 0; }
+.icaro-runner-note  { font-size: 9px; color: var(--text3); line-height: 1.6; }
+.icaro-code {
+  display: inline-block; margin-top: 4px;
+  background: var(--bg4); color: var(--gold);
+  padding: 3px 8px; font-family: 'JetBrains Mono', monospace;
+  font-size: 10px; letter-spacing: 0.5px;
+}
