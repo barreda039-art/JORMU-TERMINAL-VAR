@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from capital_client import CapitalClient
 from icaro_bridge import icaro_bridge
+import strategy_loader
 import json, time
 
 app = Flask(__name__)
@@ -327,6 +328,72 @@ def icaro_capital():
     return jsonify({'ok': True, 'reserve_pct': reserve_pct})
 
 # ══════════════════════════════════════════════════════════
+# STRATEGIES REGISTRY (dinámico — lee carpeta strategies/)
+# ══════════════════════════════════════════════════════════
+
+@app.route('/api/strategies', methods=['GET'])
+def get_strategies():
+    strats = strategy_loader.get_all()
+
+    # Enriquecer QUANT-ENGINE-CORE con estado del engine
+    try:
+        qe = strategy_loader.get_by_id('STR-QE-001')
+        if qe:
+            cache  = engine.analysis_cache or {}
+            scored = [v.get('score', 0) for v in cache.values() if isinstance(v, dict)]
+            strategy_loader.update_metrics('STR-QE-001', {
+                'avgScore':       round(sum(scored) / len(scored), 1) if scored else 0,
+                'assetsAnalyzed': len(cache),
+            })
+            strategy_loader.set_status('STR-QE-001', 'LIVE' if engine.running else 'PAUSED')
+            strats = strategy_loader.get_all()  # re-fetch after update
+    except Exception:
+        pass
+
+    # Enriquecer ICARO con último snapshot
+    try:
+        snap = icaro_bridge.get_latest_snapshot()
+        if snap:
+            strategy_loader.enrich_icaro_from_snapshot(snap)
+            strats = strategy_loader.get_all()
+    except Exception:
+        pass
+
+    return jsonify({'ok': True, 'strategies': strats, 'count': len(strats)})
+
+@app.route('/api/strategies', methods=['POST'])
+def add_strategy():
+    """Agrega una estrategia en runtime (sin crear archivo en disco)."""
+    data = request.get_json() or {}
+    if not data.get('name'):
+        return jsonify({'ok': False, 'error': 'name requerido'}), 400
+    data.setdefault('id', 'STR-DYN-' + str(int(time.time()))[-4:])
+    data.setdefault('status', 'DEMO')
+    data.setdefault('mode',   'DEMO')
+    data.setdefault('assets', [])
+    data.setdefault('metrics', {'totalTrades':0,'winRate':0,'pnl':0,'pnlPct':0,'sharpe':0,'maxDD':0,'profitFactor':0})
+    # Inyectar directamente en el registry del loader
+    import strategy_loader as sl
+    with sl._lock:
+        sl._registry[data['id']] = data
+    return jsonify({'ok': True, 'strategy': data})
+
+@app.route('/api/strategies/<strategy_id>/toggle', methods=['POST'])
+def toggle_strategy_status(strategy_id):
+    strat = strategy_loader.get_by_id(strategy_id)
+    if not strat:
+        return jsonify({'ok': False, 'error': 'Estrategia no encontrada'}), 404
+    new_status = 'PAUSED' if strat['status'] != 'PAUSED' else strat.get('mode', 'DEMO')
+    strategy_loader.set_status(strategy_id, new_status)
+    return jsonify({'ok': True, 'strategy': strategy_loader.get_by_id(strategy_id)})
+
+@app.route('/api/strategies/reload', methods=['POST'])
+def reload_strategies():
+    """Fuerza un re-scan de la carpeta strategies/."""
+    strats = strategy_loader.scan_all()
+    return jsonify({'ok': True, 'count': len(strats), 'strategies': strats})
+
+# ══════════════════════════════════════════════════════════
 # ERRORS
 # ══════════════════════════════════════════════════════════
 @app.errorhandler(404)
@@ -340,6 +407,8 @@ def server_error(e):
 # ══════════════════════════════════════════════════════════
 if __name__ == '__main__':
     # Iniciar watcher de ICARO en background
+    # Arrancar watchers de carpetas
+    strategy_loader.start_watching(interval=3)   # hot-reload strategies/
     icaro_bridge.start_watching(interval_seconds=30)
 
     print("""

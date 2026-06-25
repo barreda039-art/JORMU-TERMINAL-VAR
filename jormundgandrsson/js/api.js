@@ -273,6 +273,47 @@ const API = {
 
   async updateRiskConfig(config) { return await this.put('/risk/config', config); },
   async toggleCircuitBreaker(active) { return await this.post('/risk/circuit-breaker', { active }); },
+
+  // ── STRATEGIES ────────────────────────────────────────
+  async syncStrategies() {
+    try {
+      // Timeout de 3s — si el backend no responde, continuar sin bloquear
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 3000)
+      );
+      const result = await Promise.race([this.get('/strategies'), timeout]);
+      if (result && result.ok && Array.isArray(result.strategies)) {
+        JORM.strategies = result.strategies;
+        if (typeof renderStratList  === 'function') renderStratList();
+        if (typeof renderFolderTree === 'function') renderFolderTree();
+      }
+    } catch(e) {
+      // Backend no disponible — continuar con lista vacía, sin bloquear el boot
+      console.warn('[API] syncStrategies:', e.message);
+    }
+  },
+
+  async toggleStrategyStatus(id) {
+    const result = await this.post(`/strategies/${id}/toggle`);
+    if (result.ok) await this.syncStrategies();
+    return result;
+  },
+
+  async reloadStrategies() {
+    const result = await this.post('/strategies/reload');
+    if (result.ok) {
+      await this.syncStrategies();
+      JORM.alerts.unshift({ type: 'ok', text: `Strategies/ re-escaneado — ${result.count} estrategia(s)`, time: JORM.now() });
+      renderAlerts();
+    }
+    return result;
+  },
+
+  startStrategyPolling() {
+    // Re-sincroniza estrategias cada 10s para detectar hot-reload
+    if (this._stratInterval) clearInterval(this._stratInterval);
+    this._stratInterval = setInterval(() => API.syncStrategies(), 10000);
+  },
 };
 
 // ── RENDER ENGINE STATUS EN AUTOPSIA ──────────────────────

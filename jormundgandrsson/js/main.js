@@ -398,11 +398,11 @@ function boot() {
   const interval = setInterval(() => {
     if (step >= steps.length) {
       clearInterval(interval);
-      setTimeout(() => {
+      setTimeout(async () => {
         const overlay = document.getElementById('boot-overlay');
         overlay.classList.add('hidden');
         setTimeout(() => overlay.style.display = 'none', 600);
-        initSystem();
+        await initSystem();
       }, 400);
       return;
     }
@@ -412,7 +412,7 @@ function boot() {
   }, 220);
 }
 
-function initSystem() {
+async function initSystem() {
   startClock();
   renderTicker();
   startTickerUpdates();
@@ -421,6 +421,10 @@ function initSystem() {
 
   /* init demo mode buttons */
   document.getElementById('btn-demo').classList.add('active', 'demo');
+
+  /* cargar estrategias desde el backend + arrancar hot-reload polling */
+  await API.syncStrategies();
+  API.startStrategyPolling();
 
   showModule('dashboard');
 }
