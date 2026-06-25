@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JORMUNDGANDRSSON — Institutional Quant Terminal</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/terminal.css">
+<link rel="stylesheet" href="css/panels.css">
+<link rel="stylesheet" href="css/charts.css">
+</head>
+<body>
+
+<!-- SYSTEM STATUS OVERLAY -->
+<div id="boot-overlay">
+  <div class="boot-content">
+    <div class="boot-logo">JORMUNDGANDRSSON</div>
+    <div class="boot-sub">INSTITUTIONAL QUANT TERMINAL v1.0</div>
+    <div class="boot-progress-wrap"><div class="boot-progress" id="boot-bar"></div></div>
+    <div class="boot-status" id="boot-status">INITIALIZING SYSTEM...</div>
+  </div>
+</div>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker-inner"></div>
+</div>
+
+<!-- TOP HEADER -->
+<header class="top-header">
+  <div class="header-left">
+    <div class="logo-block">
+      <span class="logo-text">JORMUNDGANDRSSON</span>
+      <span class="logo-version">QT v1.0</span>
+    </div>
+    <div class="header-sep"></div>
+    <div class="header-metrics" id="header-metrics"></div>
+  </div>
+  <div class="header-right">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="btn-demo" onclick="setMode('DEMO')">DEMO</button>
+      <button class="mode-btn" id="btn-live" onclick="setMode('LIVE')">LIVE</button>
+    </div>
+    <div class="header-sep"></div>
+    <div class="broker-status" id="broker-status"></div>
+    <div class="header-sep"></div>
+    <div class="system-clock" id="system-clock"></div>
+  </div>
+</header>
+
+<!-- MAIN NAV -->
+<nav class="main-nav">
+  <button class="nav-btn active" onclick="showModule('dashboard')" id="nav-dashboard">
+    <span class="nav-icon">▪</span> DASHBOARD
+  </button>
+  <button class="nav-btn" onclick="showModule('autopsia')" id="nav-autopsia">
+    <span class="nav-icon">▪</span> AUTOPSIA
+  </button>
+  <button class="nav-btn" onclick="showModule('strategies')" id="nav-strategies">
+    <span class="nav-icon">▪</span> STRATEGIES
+  </button>
+  <button class="nav-btn" onclick="showModule('positions')" id="nav-positions">
+    <span class="nav-icon">▪</span> POSICIONES
+  </button>
+  <button class="nav-btn" onclick="showModule('risk')" id="nav-risk">
+    <span class="nav-icon">▪</span> RISK MGR
+  </button>
+  <button class="nav-btn" onclick="showModule('config')" id="nav-config">
+    <span class="nav-icon">▪</span> CONFIG
+  </button>
+  <div class="nav-spacer"></div>
+  <div class="nav-fund-name">FUND: <span class="gold">JORM-ALPHA-01</span></div>
+</nav>
+
+<!-- MODULE CONTAINER -->
+<main class="module-container">
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: DASHBOARD                          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module active" id="module-dashboard">
+    <div class="dashboard-grid">
+
+      <!-- LEFT COLUMN -->
+      <div class="dash-col dash-col-left">
+
+        <!-- FUND NAV METRICS -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">FUND METRICS</span>
+            <span class="panel-badge live-badge">● LIVE</span>
+          </div>
+          <div class="metrics-grid" id="fund-metrics"></div>
+        </div>
+
+        <!-- STRATEGY FOLDER -->
+        <div class="panel" style="margin-top:1px">
+          <div class="panel-header">
+            <span class="panel-title">📁 STRATEGIES/</span>
+            <button class="hdr-btn" onclick="showModule('strategies')">VER TODO</button>
+          </div>
+          <div class="folder-tree" id="folder-tree"></div>
+        </div>
+
+        <!-- TRADE LOG -->
+        <div class="panel" style="margin-top:1px;flex:1">
+          <div class="panel-header">
+            <span class="panel-title">TRADE LOG</span>
+            <span class="panel-badge" id="trade-count-badge">0 trades</span>
+          </div>
+          <div class="trade-log-wrap" id="trade-log"></div>
+        </div>
+
+      </div>
+
+      <!-- CENTER COLUMN -->
+      <div class="dash-col dash-col-center">
+
+        <!-- NAV CURVE -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">CURVA DE CAPITAL — NAV</span>
+            <div class="tf-btns">
+              <button class="tf-btn" onclick="setNavTF('1W')">1W</button>
+              <button class="tf-btn active" onclick="setNavTF('1M')">1M</button>
+              <button class="tf-btn" onclick="setNavTF('3M')">3M</button>
+              <button class="tf-btn" onclick="setNavTF('6M')">6M</button>
+              <button class="tf-btn" onclick="setNavTF('1Y')">1Y</button>
+            </div>
+          </div>
+          <div class="chart-wrap" style="height:180px">
+            <canvas id="nav-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- OPEN POSITIONS -->
+        <div class="panel" style="margin-top:1px">
+          <div class="panel-header">
+            <span class="panel-title">POSICIONES ABIERTAS</span>
+            <span class="panel-badge" id="pos-count-badge">0 activas</span>
+          </div>
+          <div class="table-wrap">
+            <table class="inst-table" id="positions-table">
+              <thead>
+                <tr>
+                  <th>SÍMBOLO</th><th>LADO</th><th>TAMAÑO</th>
+                  <th>ENTRADA</th><th>ACTUAL</th><th>SL</th><th>TP</th>
+                  <th>PNL $</th><th>PNL %</th><th>ESTRAT.</th><th>ACT.</th>
+                </tr>
+              </thead>
+              <tbody id="positions-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- PNL BY STRATEGY -->
+        <div class="panel" style="margin-top:1px">
+          <div class="panel-header">
+            <span class="panel-title">PNL POR ESTRATEGIA</span>
+            <span class="panel-badge">ACUMULADO</span>
+          </div>
+          <div class="chart-wrap" style="height:140px">
+            <canvas id="strat-pnl-chart"></canvas>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN -->
+      <div class="dash-col dash-col-right">
+
+        <!-- RISK MONITOR -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title">RISK MONITOR</span>
+            <span class="panel-badge warn-badge" id="risk-status-badge">NOMINAL</span>
+          </div>
+          <div class="risk-gauges" id="risk-gauges"></div>
+        </div>
+
+        <!-- ALLOCATION PIE -->
+        <div class="panel" style="margin-top:1px">
+          <div class="panel-header">
+            <span class="panel-title">CAPITAL ALLOCATION</span>
+          </div>
+          <div class="chart-wrap" style="height:140px">
+            <canvas id="alloc-chart"></canvas>
+          </div>
+        </div>
+
+        <!-- ALERTS -->
+        <div class="panel" style="margin-top:1px;flex:1">
+          <div class="panel-header">
+            <span class="panel-title">SYSTEM ALERTS</span>
+            <span class="panel-badge" id="alert-count-badge">0</span>
+          </div>
+          <div class="alerts-wrap" id="alerts-panel"></div>
+        </div>
+
+        <!-- DAILY PNL BARS -->
+        <div class="panel" style="margin-top:1px">
+          <div class="panel-header">
+            <span class="panel-title">PNL DIARIO</span>
+          </div>
+          <div class="chart-wrap" style="height:90px">
+            <canvas id="daily-pnl-chart"></canvas>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: AUTOPSIA DE MERCADO               -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module" id="module-autopsia">
+    <div class="autopsia-grid">
+
+      <!-- ENGINE STATUS PANEL -->
+      <div class="panel" style="flex-shrink:0" id="engine-panel">
+        <div class="panel-header">
+          <span class="panel-title gold-title">⚡ QUANT ENGINE — ANÁLISIS EN TIEMPO REAL</span>
+          <span class="panel-badge gold-badge" id="engine-running-badge">STANDBY</span>
+        </div>
+        <div id="engine-status-panel">
+          <div style="padding:16px;text-align:center;color:var(--text4);font-size:9px">Conecta Capital.com y activa el engine para ver el análisis en tiempo real</div>
+        </div>
+      </div>
+
+      <!-- ROW 1: MACRO REGIME + CALENDAR + FLOWS -->
+      <div class="autopsia-row" id="autopsia-row-1">
+
+        <div class="panel autopsia-panel" id="ap-regime">
+          <div class="panel-header">
+            <span class="panel-title">RÉGIMEN MACRO</span>
+            <span class="panel-badge" id="regime-badge">RISK-ON</span>
+          </div>
+          <div class="regime-content" id="regime-content"></div>
+        </div>
+
+        <div class="panel autopsia-panel" id="ap-calendar">
+          <div class="panel-header">
+            <span class="panel-title">CALENDARIO MACRO</span>
+            <span class="panel-badge">PRÓXIMOS EVENTOS</span>
+          </div>
+          <div class="calendar-content" id="calendar-content"></div>
+        </div>
+
+        <div class="panel autopsia-panel" id="ap-flows">
+          <div class="panel-header">
+            <span class="panel-title">FLUJOS DE CAPITAL</span>
+            <span class="panel-badge">COT + POSITIONING</span>
+          </div>
+          <div class="flows-content" id="flows-content"></div>
+        </div>
+
+      </div>
+
+      <!-- ROW 2: CORRELATIONS + NEWS -->
+      <div class="autopsia-row" id="autopsia-row-2">
+
+        <div class="panel autopsia-panel-wide" id="ap-correlations">
+          <div class="panel-header">
+            <span class="panel-title">CORRELACIONES INTER-MERCADO</span>
+            <div class="tf-btns">
+              <button class="tf-btn active">1D</button>
+              <button class="tf-btn">5D</button>
+              <button class="tf-btn">30D</button>
+            </div>
+          </div>
+          <div class="corr-content" id="corr-content"></div>
+        </div>
+
+        <div class="panel autopsia-panel-wide" id="ap-news">
+          <div class="panel-header">
+            <span class="panel-title">NEWS FLOW — TIEMPO REAL</span>
+            <div class="news-filter-btns">
+              <button class="news-filter active" onclick="filterNews('ALL')">ALL</button>
+              <button class="news-filter" onclick="filterNews('BULL')">BULL</button>
+              <button class="news-filter" onclick="filterNews('BEAR')">BEAR</button>
+              <button class="news-filter" onclick="filterNews('HIGH')">HIGH IMP</button>
+            </div>
+          </div>
+          <div class="news-content" id="news-content"></div>
+        </div>
+
+      </div>
+
+      <!-- ROW 3: MICROSTRUCTURE -->
+      <div class="autopsia-row" id="autopsia-row-3">
+
+        <div class="panel autopsia-panel" id="ap-orderflow">
+          <div class="panel-header">
+            <span class="panel-title">ORDER FLOW</span>
+            <select class="inst-select" id="of-symbol" onchange="updateOrderFlow()">
+              <option>SPX500</option><option>NAS100</option>
+              <option>EURUSD</option><option>XAUUSD</option><option>USOIL</option>
+            </select>
+          </div>
+          <div class="orderflow-content" id="orderflow-content"></div>
+        </div>
+
+        <div class="panel autopsia-panel" id="ap-volprofile">
+          <div class="panel-header">
+            <span class="panel-title">VOLUME PROFILE</span>
+            <span class="panel-badge">POC + VAH + VAL</span>
+          </div>
+          <div class="volprofile-content" id="volprofile-content">
+            <div class="chart-wrap" style="height:180px">
+              <canvas id="vol-profile-chart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel autopsia-panel" id="ap-options">
+          <div class="panel-header">
+            <span class="panel-title">OPCIONES + VIX</span>
+            <span class="panel-badge" id="vix-badge">VIX: --</span>
+          </div>
+          <div class="options-content" id="options-content"></div>
+        </div>
+
+      </div>
+
+      <!-- ROW 4: QUANT TECHNICAL + OPPORTUNITY ENGINE -->
+      <div class="autopsia-row" id="autopsia-row-4">
+
+        <div class="panel autopsia-panel-wide" id="ap-quant-tech">
+          <div class="panel-header">
+            <span class="panel-title">ANÁLISIS TÉCNICO CUANTITATIVO</span>
+            <span class="panel-badge">MULTI-TIMEFRAME</span>
+          </div>
+          <div class="quant-tech-content" id="quant-tech-content"></div>
+        </div>
+
+        <div class="panel autopsia-panel-wide opportunity-panel" id="ap-opportunities">
+          <div class="panel-header">
+            <span class="panel-title gold-title">▶ OPORTUNIDADES DETECTADAS</span>
+            <span class="panel-badge gold-badge" id="opp-count">0 señales</span>
+          </div>
+          <div class="opp-content" id="opp-content"></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: STRATEGIES                         -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module" id="module-strategies">
+    <div class="strategies-grid">
+
+      <div class="strat-sidebar">
+        <div class="panel" style="height:100%">
+          <div class="panel-header">
+            <span class="panel-title">📁 STRATEGIES/</span>
+            <button class="hdr-btn gold-btn" onclick="openNewStrategyModal()">+ NUEVA</button>
+          </div>
+          <div style="padding:6px 8px;border-bottom:1px solid var(--border)">
+            <input class="inst-input" placeholder="BUSCAR..." oninput="filterStrategies(this.value)" style="width:100%">
+          </div>
+          <div id="strat-list-panel"></div>
+        </div>
+      </div>
+
+      <div class="strat-detail-area" id="strat-detail-area">
+        <div class="strat-empty-state">
+          <div class="empty-icon">▪</div>
+          <div class="empty-title">SELECCIONA UNA ESTRATEGIA</div>
+          <div class="empty-sub">O crea una nueva para comenzar</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: POSITIONS                          -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module" id="module-positions">
+    <div class="positions-layout">
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">GESTIÓN DE POSICIONES</span>
+          <div style="display:flex;gap:4px">
+            <button class="hdr-btn" onclick="exportPositions()">EXPORTAR</button>
+            <button class="hdr-btn red-btn" onclick="closeAllPositions()">CERRAR TODO</button>
+          </div>
+        </div>
+        <div class="pos-summary-row" id="pos-summary"></div>
+        <div class="table-wrap">
+          <table class="inst-table">
+            <thead>
+              <tr>
+                <th>FECHA ENTRADA</th><th>SÍMBOLO</th><th>ESTRATEGIA</th>
+                <th>LADO</th><th>TAMAÑO</th><th>ENTRADA</th><th>ACTUAL</th>
+                <th>SL</th><th>TP</th><th>PNL $</th><th>PNL %</th>
+                <th>DURACIÓN</th><th>R:R</th><th>ACCIÓN</th>
+              </tr>
+            </thead>
+            <tbody id="positions-full-body"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1px">
+        <div class="panel-header">
+          <span class="panel-title">HISTORIAL DE TRADES</span>
+          <span class="panel-badge" id="history-count">0 trades cerrados</span>
+        </div>
+        <div class="chart-wrap" style="height:120px">
+          <canvas id="pnl-hist-chart"></canvas>
+        </div>
+        <div class="table-wrap">
+          <table class="inst-table">
+            <thead>
+              <tr>
+                <th>FECHA</th><th>SÍMBOLO</th><th>ESTRATEGIA</th><th>LADO</th>
+                <th>ENTRADA</th><th>SALIDA</th><th>PNL $</th><th>PNL %</th>
+                <th>DURACIÓN</th><th>R:R</th>
+              </tr>
+            </thead>
+            <tbody id="history-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: RISK MANAGER                       -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module" id="module-risk">
+    <div class="risk-layout">
+
+      <div class="risk-top-row">
+        <div class="panel risk-rule-panel">
+          <div class="panel-header">
+            <span class="panel-title">REGLAS DE RIESGO</span>
+            <span class="panel-badge">AUTÓNOMO</span>
+          </div>
+          <div class="risk-rules-content" id="risk-rules-content"></div>
+        </div>
+        <div class="panel risk-compound-panel">
+          <div class="panel-header">
+            <span class="panel-title">COMPOUNDING ENGINE</span>
+            <span class="panel-badge gold-badge">KELLY CRITERION</span>
+          </div>
+          <div class="compound-content" id="compound-content"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1px">
+        <div class="panel-header">
+          <span class="panel-title">DRAWDOWN + VAR HISTÓRICO</span>
+        </div>
+        <div class="chart-wrap" style="height:160px">
+          <canvas id="drawdown-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:1px">
+        <div class="panel-header">
+          <span class="panel-title">MATRIZ DE CORRELACIÓN — PORTFOLIO</span>
+        </div>
+        <div class="corr-matrix-wrap" id="corr-matrix"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- MODULE: CONFIG                             -->
+  <!-- ═══════════════════════════════════════════ -->
+  <div class="module" id="module-config">
+    <div class="config-layout">
+
+      <div class="panel">
+        <div class="panel-header">
+          <span class="panel-title">CONEXIÓN BROKERS</span>
+          <span class="panel-badge">API CREDENTIALS</span>
+        </div>
+        <div class="config-grid" id="config-brokers"></div>
+      </div>
+
+      <div class="panel" style="margin-top:1px">
+        <div class="panel-header">
+          <span class="panel-title">FUENTES DE DATOS</span>
+          <span class="panel-badge">DATA SOURCES</span>
+        </div>
+        <div class="config-grid" id="config-datasources"></div>
+      </div>
+
+      <div class="panel" style="margin-top:1px">
+        <div class="panel-header">
+          <span class="panel-title">PARÁMETROS DEL FONDO</span>
+        </div>
+        <div class="config-grid" id="config-fund"></div>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- MODAL: NEW STRATEGY -->
+<div class="modal-overlay" id="modal-new-strategy" style="display:none">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="panel-title">NUEVA ESTRATEGIA → STRATEGIES/</span>
+      <button class="modal-close" onclick="closeModal('modal-new-strategy')">✕</button>
+    </div>
+    <div class="modal-body" id="new-strategy-form"></div>
+  </div>
+</div>
+
+<!-- SCRIPTS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="js/state.js"></script>
+<script src="js/strategies.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/autopsia.js"></script>
+<script src="js/risk.js"></script>
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,93 @@
+/* ═══════════════════════════════════════
+   DASHBOARD + AUTOPSIA LAYOUTS
+═══════════════════════════════════════ */
+
+/* DASHBOARD 3-COLUMN GRID */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 240px 1fr 210px;
+  gap: 1px;
+  background: var(--border);
+  height: 100%;
+  overflow: hidden;
+}
+.dash-col {
+  display: flex; flex-direction: column;
+  background: var(--border);
+  gap: 1px;
+  overflow-y: auto;
+  height: 100%;
+}
+.dash-col-left  { gap: 1px; }
+.dash-col-center { gap: 1px; }
+.dash-col-right  { gap: 1px; }
+
+/* AUTOPSIA LAYOUT */
+.autopsia-grid {
+  display: flex; flex-direction: column;
+  gap: 1px; background: var(--border);
+  height: 100%; overflow-y: auto; padding: 0;
+}
+.autopsia-row {
+  display: flex; gap: 1px; background: var(--border);
+  flex-shrink: 0;
+}
+.autopsia-panel { flex: 1; min-width: 0; }
+.autopsia-panel-wide { flex: 1; min-width: 0; }
+
+/* CORR CONTENT */
+.corr-content { padding: 6px; overflow-x: auto; }
+.corr-heatmap {
+  display: grid;
+  gap: 1px;
+}
+.corr-heatmap-cell {
+  padding: 4px 6px; text-align: center;
+  font-size: 9px; font-weight: 600;
+  min-width: 52px;
+}
+
+/* VOL PROFILE */
+.volprofile-content { padding: 4px; }
+.vp-row {
+  display: flex; align-items: center; gap: 4px;
+  padding: 2px 0; font-size: 9px;
+}
+.vp-price { min-width: 54px; color: var(--text2); text-align: right; }
+.vp-bar-wrap { flex: 1; height: 6px; background: var(--bg4); position: relative; }
+.vp-bar { height: 100%; }
+.vp-bar.poc { background: var(--gold); }
+.vp-bar.val { background: rgba(37,199,111,0.5); }
+.vp-bar.normal { background: rgba(52,152,219,0.3); }
+.vp-vol { min-width: 44px; text-align: right; font-size: 8px; color: var(--text4); }
+.vp-label { min-width: 28px; font-size: 7px; letter-spacing: 0.5px; }
+.vp-label.poc { color: var(--gold); }
+.vp-label.vah { color: var(--green); }
+.vp-label.val { color: var(--red); }
+
+/* OPTIONS CONTENT */
+.options-content { padding: 6px; }
+.opt-section { margin-bottom: 8px; }
+.opt-section-title { font-size: 8px; color: var(--gold); letter-spacing: 1px; margin-bottom: 4px; }
+.opt-row {
+  display: flex; justify-content: space-between;
+  padding: 3px 0; border-bottom: 1px solid var(--border);
+  font-size: 9px;
+}
+.opt-key { color: var(--text3); }
+.opt-val { font-weight: 600; color: var(--text0); }
+.opt-val.bearish { color: var(--red); }
+.opt-val.bullish { color: var(--green); }
+.opt-val.gold { color: var(--gold); }
+
+.vix-gauge {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px; background: var(--bg2);
+  border: 1px solid var(--border2); margin-bottom: 8px;
+}
+.vix-val { font-size: 22px; font-weight: 700; }
+.vix-val.low { color: var(--green); }
+.vix-val.med { color: var(--yellow); }
+.vix-val.high { color: var(--red); }
+.vix-label { font-size: 8px; color: var(--text3); letter-spacing: 1px; }
+.vix-regime { font-size: 10px; font-weight: 600; }
