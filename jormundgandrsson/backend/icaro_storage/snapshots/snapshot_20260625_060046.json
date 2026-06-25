@@ -20,7 +20,7 @@
   "drawdown_from_high": -0.0043,
   "benchmark_close": 692.18,
   "vix_close": 25.54,
-  "timestamp": "2026-06-25T06:00:46.962985+00:00",
+  "timestamp": "2026-06-25T06:00:35.074270+00:00",
   "status": "RUNNING",
   "engine_name": "ICARO V2.1",
   "snapshot_version": "v2.1.0"

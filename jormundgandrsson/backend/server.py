@@ -6,6 +6,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 from capital_client import CapitalClient
 from icaro_bridge import icaro_bridge
+from data_bus import data_bus
 import strategy_loader
 import json, time
 
@@ -221,6 +222,9 @@ from quant_engine import QuantEngine
 
 engine = QuantEngine(capital)
 
+# ── DATA BUS — inicializar con las dependencias del sistema ──
+data_bus.init(capital, engine, icaro_bridge)
+
 def on_new_signal(signal):
     print(f'[SERVER] ◆ Nueva señal: {signal["asset"]} {signal["direction"]} Score:{signal["total_score"]}')
 
@@ -394,6 +398,174 @@ def reload_strategies():
     return jsonify({'ok': True, 'count': len(strats), 'strategies': strats})
 
 # ══════════════════════════════════════════════════════════
+# DATA BUS — ENDPOINTS UNIFICADOS
+# ══════════════════════════════════════════════════════════
+
+@app.route('/api/bus/status', methods=['GET'])
+def bus_status():
+    """Estado de todos los providers del Data Bus."""
+    return jsonify({'ok': True, 'status': data_bus.status()})
+
+@app.route('/api/bus/prices', methods=['GET'])
+def bus_prices():
+    """
+    Precios en tiempo real de los 7 assets core (o los solicitados).
+    Query param: ?symbols=EURUSD,GBPUSD,XAUUSD
+    """
+    symbols_param = request.args.get('symbols')
+    symbols = symbols_param.split(',') if symbols_param else None
+    try:
+        prices = data_bus.get_prices(symbols)
+        return jsonify({'ok': True, 'prices': prices, 'count': len(prices)})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/candles/<symbol>', methods=['GET'])
+def bus_candles(symbol):
+    """
+    Velas OHLCV históricas de un símbolo.
+    Query params: ?resolution=HOUR&count=100
+    """
+    resolution = request.args.get('resolution', 'HOUR')
+    count      = int(request.args.get('count', 100))
+    try:
+        candles = data_bus.get_candles(symbol.upper(), resolution, count)
+        return jsonify({'ok': True, 'symbol': symbol.upper(), 'candles': candles, 'count': len(candles)})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/correlations', methods=['GET'])
+def bus_correlations():
+    """
+    Matriz de correlación calculada sobre velas diarias reales.
+    Query params: ?days=30&symbols=EURUSD,GBPUSD,...
+    """
+    days          = int(request.args.get('days', 30))
+    symbols_param = request.args.get('symbols')
+    symbols       = symbols_param.split(',') if symbols_param else None
+    try:
+        matrix = data_bus.get_correlations(symbols, days)
+        return jsonify({'ok': True, **matrix})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/orderflow/<symbol>', methods=['GET'])
+def bus_orderflow(symbol):
+    """
+    Order flow acumulado: delta, imbalance, presión dominante.
+    """
+    try:
+        of = data_bus.get_orderflow(symbol.upper())
+        return jsonify({'ok': True, **of})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/news', methods=['GET'])
+def bus_news():
+    """
+    Noticias de mercado filtradas por relevancia.
+    Query params: ?symbols=EURUSD,XAUUSD&limit=20
+    """
+    symbols_param = request.args.get('symbols')
+    symbols       = symbols_param.split(',') if symbols_param else None
+    limit         = int(request.args.get('limit', 20))
+    try:
+        news = data_bus.get_news(symbols, limit)
+        return jsonify({'ok': True, 'news': news, 'count': len(news)})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/calendar', methods=['GET'])
+def bus_calendar():
+    """
+    Próximos eventos del calendario económico.
+    Finnhub primario, ForexFactory como fallback.
+    """
+    try:
+        events = data_bus.get_calendar()
+        return jsonify({'ok': True, 'events': events, 'count': len(events)})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/sentiment', methods=['GET'])
+def bus_sentiment():
+    """
+    % Long / % Short de clientes de Capital.com por instrumento.
+    Query param: ?symbols=EURUSD,GBPUSD
+    """
+    symbols_param = request.args.get('symbols')
+    symbols       = symbols_param.split(',') if symbols_param else None
+    try:
+        sentiment = data_bus.get_sentiment(symbols)
+        return jsonify({'ok': True, 'sentiment': sentiment})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/regime', methods=['GET'])
+def bus_regime():
+    """
+    Snapshot completo de ICARO V2.1: régimen, fragility, convexity, crash_prob.
+    """
+    try:
+        regime = data_bus.get_regime()
+        return jsonify({'ok': True, 'regime': regime})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/quant', methods=['GET'])
+def bus_quant():
+    """
+    Scores del Quant Engine por asset: total_score, OBs, FVGs, estructura.
+    """
+    try:
+        scores = data_bus.get_quant_scores()
+        return jsonify({'ok': True, 'scores': scores, 'assets': list(scores.keys())})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/vix', methods=['GET'])
+def bus_vix():
+    """
+    VIX proxy via VIXY/VXX (Alpaca). Incluye nivel e interpretación de régimen.
+    """
+    try:
+        vix = data_bus.get_vix()
+        return jsonify({'ok': True, **vix})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/snapshot', methods=['GET'])
+def bus_snapshot():
+    """
+    Snapshot completo del mercado — el método estrella.
+    Todo consolidado: precios, régimen, scores, noticias, calendario,
+    sentiment, correlaciones, VIX.
+    Query param: ?symbols=EURUSD,GBPUSD (opcional)
+    """
+    symbols_param = request.args.get('symbols')
+    symbols       = symbols_param.split(',') if symbols_param else None
+    try:
+        snapshot = data_bus.get_market_snapshot(symbols)
+        return jsonify({'ok': True, 'snapshot': snapshot})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+@app.route('/api/bus/cache/invalidate', methods=['POST'])
+def bus_cache_invalidate():
+    """
+    Invalida el caché del Data Bus.
+    Body JSON: { "type": "news" }  → invalida solo ese tipo
+    Body vacío → invalida todo
+    """
+    body = request.get_json() or {}
+    tipo = body.get('type')
+    try:
+        data_bus.invalidate_cache(tipo)
+        return jsonify({'ok': True, 'invalidated': tipo or 'all'})
+    except Exception as e:
+        return jsonify({'ok': False, 'error': str(e)}), 500
+
+# ══════════════════════════════════════════════════════════
 # ERRORS
 # ══════════════════════════════════════════════════════════
 @app.errorhandler(404)
@@ -413,9 +585,10 @@ if __name__ == '__main__':
 
     print("""
 ╔═══════════════════════════════════════════════════╗
-║   JORMUNDGANDRSSON — Backend Server v2            ║
+║   JORMUNDGANDRSSON — Backend Server v3            ║
 ║   Puerto: 5000  |  Quant Engine: integrado        ║
-║   Endpoints: /api/engine/start  /api/engine/stop  ║
+║   Data Bus: activo  |  Providers: 4               ║
+║   Endpoints: /api/bus/snapshot  /api/bus/status   ║
 ╚═══════════════════════════════════════════════════╝
     """)
     app.run(host='0.0.0.0', port=5000, debug=False)
